@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <script src="https://cdn.bootcss.com/socket.io/2.2.0/socket.io.js"></script>
+</head>
+<body>
+    <script>
+        var socket = io('http://localhost:8080/');
+        socket.on('connect', function () {
+          socket.send('hi');
+      
+          socket.on('reply', function (msg) {
+            console.log(msg)
+          });
+        });
+      </script>
+</body>
+</html>

@@ -42,6 +42,7 @@
     <div id="webchat"></div>
     <script src="js/d3.min.js"></script>
     <script src="js/neo4jd3.js?v=0.0.1"></script>
+    <script src="https://cdn.bootcss.com/socket.io/2.2.0/socket.io.js"></script>
     <script type="text/javascript">
 
         var data = eval({
@@ -122,6 +123,14 @@
             });
         }
         window.onload = init;
+        var socket = io('http://localhost:8080/');
+        socket.on('connect', function () {
+          socket.send('hi');
+          socket.on('reply', function (msg) {
+              init()
+            console.log(msg)
+          });
+        });
     </script>
     <script src="webchat.js"></script>
     <script>
