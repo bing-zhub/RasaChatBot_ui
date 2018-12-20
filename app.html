@@ -8,15 +8,138 @@
     <script src="https://cdn.bootcss.com/socket.io/2.2.0/socket.io.js"></script>
 </head>
 <body>
-    <script>
-        var socket = io('http://localhost:8080/');
-        socket.on('connect', function () {
-          socket.send('hi');
-      
-          socket.on('reply', function (msg) {
-            console.log(msg)
-          });
-        });
-      </script>
+    <h1>OverView</h1>
+<p><strong>一个基于Rasa Stack, 带有WebUI的知识问答机器人</strong></p>
+<p><a href="https://github.com/bing-zhub/RasaChatBot" target="_blank" rel="nofollow">后端</a>   <a href="https://github.com/bing-zhub/RasaChatBot_ui" target="_blank" rel="nofollow">前端</a></p>
+<h2>功能截图</h2>
+<div class="image-package">
+<img src="http://images.zshaopingb.cn/2018/12/3664281616.png" data-original-src="http://images.zshaopingb.cn/2018/12/3664281616.png" alt="Demo"><div class="image-caption">Demo</div>
+</div>
+<h2>技术架构</h2>
+<p></p><div class="image-package">
+<img src="http://images.zshaopingb.cn/2018/12/4005670685.png" data-original-src="http://images.zshaopingb.cn/2018/12/4005670685.png" alt="pipeline"><div class="image-caption">pipeline</div>
+</div><br>
+<a href="https://rasa.com/docs/get_started_step1/" target="_blank" rel="nofollow">参考</a><p></p>
+<h3>模块化</h3>
+<p>Action - Rasa NLU - Rasa Core - Web Server</p>
+<h3>Context保存</h3>
+<p>将所需要的entities放入不同slot中(通过Rasa-core实现)</p>
+<h3>基于意图(Intent-based)的对话</h3>
+<p>这是当NLP算法使用intents和entities进行对话时，通过识别用户声明中的名词和动词，然后与它的dictionary交叉引用，让bot可以执行有效的操作。</p>
+<h3>...</h3>
+<h2>Rasa NLU</h2>
+<p>使用自然语言理解进行意图识别和实体提取</p>
+<h3>Example:</h3>
+<p>rquest(part)<br>
+<code>"张青红的生日什么时候"</code></p>
+<p>response</p>
+<pre><code class="json">{
+  "intent": "view_defendant_data",
+  "entities": {
+    "defendant" : "张青红",
+    "item" : "生日"
+  }
+}
+</code></pre>
+<h3>Pipeline</h3>
+<p>假设我们在config文件中这样设置pipeline<code>"pipeline": ["Component A", "Component B", "Last Component"]</code><br>
+那么其生命周期如下：<br>
+</p><div class="image-package">
+<img src="http://images.zshaopingb.cn/2018/12/4136964647.png" data-original-src="http://images.zshaopingb.cn/2018/12/4136964647.png" alt="LifeCircle"><div class="image-caption">LifeCircle</div>
+</div><br>
+在<code>Component A</code>调用开始之前， rasa nlu会首先根据nlu的训练集创建一个Context(no more than a python dict). Context用于在各个Component之间传递消息。 比如， 我们可以让<code>Component A</code>去根据训练集计算特征向量， 训练完成后将结果保存在Context中， 传递到下一个Component。 <code>Component B</code> 可以获取这些特征向量， 并根据其做意图分类。在所有Component完成后， 最后的Context中保存这个模型的元数据(metadata).<p></p>
+<pre><code class="yaml">language: "zh"
+
+pipeline:
+- name: "nlp_mitie"
+  model: "data/total_word_feature_extractor_zh.dat"
+- name: "tokenizer_jieba" 
+- name: "ner_mitie" 
+- name: "ner_synonyms"
+- name: "intent_entity_featurizer_regex"
+- name: "intent_featurizer_mitie"
+- name: "intent_classifier_sklearn"
+</code></pre>
+<p>MITIE是一个MIT信息提取库，该库使用了最先进的统计机器学习工具构建。它类似于word2vec中的word embedding。MITIE模型，在NLU（自然语言理解）系统中，完成实体识别和意图提示的任务。<br>
+”nlp_mitie”初始化MITIE<br>
+”tokenizer_jieba”用jieba来做分词<br>
+”ner_mitie”和”ner_synonyms”做实体识别<br>
+”intent_featurizer_mitie”为意图识别做特征提取”intent_classifier_sklearn”使用sklearn做意图识别的分类。</p>
+<h3>Training</h3>
+<p>我们的训练集<code>data.json</code></p>
+<pre><code class="json">{
+  "rasa_nlu_data": {
+    "common_examples": [
+      {
+        "text": "张青红的生日什么时候",
+        "intent": "viewDefendantData",
+        "entities": [
+          {
+            "start": 4,
+            "end": 6,
+            "value": "生日",
+            "entity": "item"
+          },
+          {
+            "start": 0,
+            "end": 3,
+            "value": "张青红",
+            "entity": "defendant"
+          }
+        ]
+      }
+    ]
+  }
+}
+</code></pre>
+<p>也可以通过<a href="https://github.com/RasaHQ/rasa-nlu-trainer" target="_blank" rel="nofollow">可视化工具(rasa-nlu-trainer)</a>进行实体的标注等<br>
+</p><div class="image-package">
+<img src="http://images.zshaopingb.cn/2018/12/2537130720.jpg" data-original-src="http://images.zshaopingb.cn/2018/12/2537130720.jpg" alt="Rasa-nlu-trainer"><div class="image-caption">Rasa-nlu-trainer</div>
+</div><p></p>
+<h3>Run as a service</h3>
+<pre><code class="bash">curl -XPOST localhost:5000/parse -d '{"q":"张青红的生日是什么时候", "project":"CriminalMiner", "model":"nlu"}'
+</code></pre>
+<h2>Rasa Core</h2>
+<p>用于对话管理</p>
+<h3>技术架构</h3>
+<div class="image-package">
+<img src="http://images.zshaopingb.cn/2018/12/1133622055.png" data-original-src="http://images.zshaopingb.cn/2018/12/1133622055.png" alt="Core技术架构"><div class="image-caption">Core技术架构</div>
+</div>
+<ol>
+<li>Rasa_Core首先接收到信息, 将信息传递给<code>Interpreter</code>, <code>Interpreter</code>将信息打包为一个字典(<code>dict</code>), 这个<code>dict</code>包括原始信息(<code>original text</code>), 意图(<code>intent</code>)的找到的所有实体(<code>entities</code>)</li>
+<li>
+<code>Tracker</code>保持对话的状态.</li>
+<li>
+<code>Policy</code> 接收到当前<code>Tracker</code>的状态</li>
+<li>
+<code>Policy</code>选择执行哪个动作(<code>Action</code>)</li>
+<li>被选中的<code>Action</code>同时被<code>Tracker</code>记录</li>
+<li>
+<code>Action</code>执行后产生回应</li>
+</ol>
+<h3>Training</h3>
+<p>基于对话</p>
+<pre><code>## story_01
+* greet
+  - utter_greet
+## story_02
+* goodbye
+  - utter_goodbye
+## story_03
+* viewCaseDefendantsNum
+  - action_view_case_defendants_num
+## story_04
+* viewCaseDefendants
+  - action_view_case_defendants
+## story_05
+* viewCase
+  - utter_ask_case
+</code></pre>
+<h3>Interactive Learning</h3>
+<p>在交互式学习模式下, 我们可以为Bot对话提供反馈. 这是一个非常强有力的方式去检测Bot能做什么, 同时也是修改错误最简单的方式. 基于机器学习的对话的有点就在于当bot不知道如何回答或者回答错误时, 我们可以及时的反馈给bot. 有些人称这种方式为<a href="https://medium.com/@karpathy/software-2-0-a64152b37c35" target="_blank" rel="nofollow">Software 2.0</a></p>
+<p>同时在这个训练过程中, 是可视化的, 在我看来, 是个究极阉割版的<a href="https://www.tensorflow.org/guide/summaries_and_tensorboard" target="_blank" rel="nofollow">TensorBoard</a></p>
+<h3>Action</h3>
+<p>进行数据校验, 和数据交互.<br>
+采用Py2Neo与数据库(Neo4j)进行交互.</p>
 </body>
 </html>

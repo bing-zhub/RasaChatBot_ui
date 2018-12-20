@@ -70,7 +70,9 @@
         socket.on('connect', function () {
           socket.send('hi');
           socket.on('reply', function (msg) {
+            console.log(msg)            
             data = JSON.parse(msg);
+            console.log(data)
             init();
           });
         });
