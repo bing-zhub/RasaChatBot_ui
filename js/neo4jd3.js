@@ -246,9 +246,7 @@
           return icon(d) ? (parseInt(Math.round(options.nodeRadius * 0.32)) + 'px') : '4px';
         })
         .html(function(d) {
-          // var _icon = icon(d);
-          // return _icon ? '&#x' + _icon : d.id;
-          return d.properties.name;
+          return d.properties["name"];
         });
       }
 
